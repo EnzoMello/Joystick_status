@@ -16,18 +16,45 @@
 #define BUTTON_A 5
 #define BUTTON_B 6
 
-// Funções para leitura dos eixos do joystick
+/** 
+ * @brief Lê o valor do eixo X do joystick e retorna a porcentagem de deslocamento.
+ * 
+ * A leitura é realizada através do ADC e o valor é convertido em uma porcentagem
+ * (0 a 100) com base no valor máximo (4095).
+ * 
+ * @return A porcentagem de deslocamento do eixo X (0-100%).
+ */
 int read_joystick_x() {
     adc_select_input(1);
     return adc_read() * 100 / 4095;  // Lê o valor de X (0-100%)
 }
 
+/** 
+ * @brief Lê o valor do eixo Y do joystick e retorna a porcentagem de deslocamento.
+ * 
+ * A leitura é realizada através do ADC e o valor é convertido em uma porcentagem
+ * (0 a 100) com base no valor máximo (4095).
+ * 
+ * @return A porcentagem de deslocamento do eixo Y (0-100%).
+ */
 int read_joystick_y() {
     adc_select_input(0);
     return adc_read() * 100 / 4095;
 }
 
-// Função para determinar a direção da rosa dos ventos
+/** 
+ * @brief Determina a direção da rosa dos ventos com base nos valores dos eixos X e Y.
+ * 
+ * O cálculo é feito considerando os valores dos eixos do joystick e uma zona morta 
+ * para evitar pequenas variações. As direções possíveis são: Norte, Sul, Leste, Oeste, 
+ * Nordeste, Sudeste, Noroeste, Sudoeste e Centro.
+ * 
+ * @param x Valor do eixo X do joystick (0-100%).
+ * @param y Valor do eixo Y do joystick (0-100%).
+ * @param dead_zone Valor da zona morta para a detecção da direção.
+ * 
+ * @return A direção da rosa dos ventos correspondente.
+ */
 const char* joystick_direction(int x, int y, int dead_zone) {
     int dx = 0, dy = 0;
 
@@ -47,7 +74,20 @@ const char* joystick_direction(int x, int y, int dead_zone) {
     return directions[dx + 1][dy + 1];  // dx e dy variam de -1 a +1
 }
 
-// Função de callback para processar requisições HTTP
+/** 
+ * @brief Função de callback que processa requisições HTTP recebidas pelo servidor TCP.
+ * 
+ * Essa função recebe os dados da requisição, verifica se é uma requisição para
+ * obter os dados do joystick e da direção da rosa dos ventos, e gera uma resposta
+ * no formato JSON ou HTML.
+ * 
+ * @param arg Argumento passado para a função (não utilizado aqui).
+ * @param tpcb Ponteiro para o controle da conexão TCP.
+ * @param p Ponteiro para o buffer de dados da requisição.
+ * @param err Código de erro da requisição.
+ * 
+ * @return ERR_OK para indicar que a requisição foi processada com sucesso.
+ */
 static err_t tcp_server_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
     if (!p) {
         tcp_close(tpcb);
@@ -139,14 +179,31 @@ static err_t tcp_server_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, er
     return ERR_OK;
 }
 
-// Função de callback ao aceitar conexões TCP
+/** 
+ * @brief Função de callback que é chamada quando uma nova conexão TCP é aceita.
+ * 
+ * Esta função define a função de recepção de dados para a nova conexão TCP.
+ * 
+ * @param arg Argumento passado para a função (não utilizado aqui).
+ * @param newpcb Ponteiro para o controle da nova conexão TCP.
+ * @param err Código de erro da conexão.
+ * 
+ * @return ERR_OK para indicar que a nova conexão foi aceita com sucesso.
+ */
 static err_t tcp_server_accept(void *arg, struct tcp_pcb *newpcb, err_t err)
 {
     tcp_recv(newpcb, tcp_server_recv);
     return ERR_OK;
 }
 
-// Função principal
+/** 
+ * @brief Função principal que inicializa o servidor TCP e gerencia a conexão Wi-Fi.
+ * 
+ * Esta função inicializa o Wi-Fi, configura o servidor TCP na porta 80 e entra no
+ * loop principal para processar as requisições.
+ * 
+ * @return 0 em caso de sucesso ou -1 em caso de falha.
+ */
 int main()
 {
     stdio_init_all();
